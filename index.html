@@ -6,565 +6,70 @@
   <title>Lab Chemical Inventory System</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
-  <style>
-    .expiring-soon {
-      background-color: #fef3c7;
-    }
-    .expired {
-      background-color: #fee2e2;
-    }
-    .low-quantity {
-      background-color: #ffedd5;
-    }
-    .search-highlight {
-      background-color: #fef08a;
-    }
-  </style>
 </head>
 <body class="bg-gray-50">
-  <div class="container mx-auto px-4 py-8 max-w-6xl">
-    <div class="flex justify-between items-center mb-6">
-      <h1 class="text-3xl font-bold text-gray-800">
-        <i class="fas fa-flask text-blue-500 mr-2"></i> Lab Chemical Inventory
-      </h1>
-      <button id="addChemicalBtn" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center">
-        <i class="fas fa-plus mr-2"></i> Add Chemical
-      </button>
-    </div>
+  <div class="container mx-auto px-4 py-8 max-w-4xl">
+    <h1 class="text-3xl font-bold text-gray-800 mb-4">
+      <i class="fas fa-flask text-blue-500 mr-2"></i> Lab Chemical Inventory
+    </h1>
 
-    <!-- Stats Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-      <div class="bg-white rounded-lg shadow p-4">
-        <div class="flex items-center">
-          <div class="p-3 rounded-full bg-blue-100 text-blue-500 mr-4">
-            <i class="fas fa-flask text-xl"></i>
-          </div>
-          <div>
-            <p class="text-gray-500">Total Chemicals</p>
-            <h3 id="totalChemicals" class="text-2xl font-bold">0</h3>
-          </div>
-        </div>
-      </div>
-      <div class="bg-white rounded-lg shadow p-4">
-        <div class="flex items-center">
-          <div class="p-3 rounded-full bg-yellow-100 text-yellow-500 mr-4">
-            <i class="fas fa-exclamation-triangle text-xl"></i>
-          </div>
-          <div>
-            <p class="text-gray-500">Expiring Soon</p>
-            <h3 id="expiringSoon" class="text-2xl font-bold">0</h3>
-          </div>
-        </div>
-      </div>
-      <div class="bg-white rounded-lg shadow p-4">
-        <div class="flex items-center">
-          <div class="p-3 rounded-full bg-red-100 text-red-500 mr-4">
-            <i class="fas fa-vial text-xl"></i>
-          </div>
-          <div>
-            <p class="text-gray-500">Low Quantity</p>
-            <h3 id="lowQuantity" class="text-2xl font-bold">0</h3>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Search and Filter -->
-    <div class="bg-white rounded-lg shadow p-4 mb-6">
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Search</label>
-          <div class="relative">
-            <input type="text" id="searchInput" placeholder="Name, ID or Lot #" 
-                   class="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500">
-            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <i class="fas fa-search text-gray-400"></i>
-            </div>
-          </div>
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-          <select id="statusFilter" class="w-full px-4 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500">
-            <option value="all">All Statuses</option>
-            <option value="active">Active Only</option>
-            <option value="inactive">Inactive Only</option>
-          </select>
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Expiration</label>
-          <select id="expirationFilter" class="w-full px-4 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500">
-            <option value="all">All</option>
-            <option value="expired">Expired</option>
-            <option value="expiring">Expiring Soon (30 days)</option>
-            <option value="safe">Not Expiring</option>
-          </select>
-        </div>
-      </div>
-    </div>
-
-    <!-- Main Table -->
-    <div class="bg-white rounded-lg shadow overflow-hidden">
-      <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200">
-          <thead class="bg-gray-100">
-            <tr>
-              <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">ID</th>
-              <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Name</th>
-              <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Lot #</th>
-              <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Received</th>
-              <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Expires</th>
-              <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Status</th>
-              <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Quantity</th>
-              <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Actions</th>
-            </tr>
-          </thead>
-          <tbody id="chemicalTableBody" class="divide-y divide-gray-200">
-            <tr><td colspan="8" class="text-center py-4 text-gray-400">Loading...</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- Pagination -->
-    <div class="flex items-center justify-between mt-4">
-      <div class="text-sm text-gray-500">
-        Showing <span id="showingFrom">0</span> to <span id="showingTo">0</span> of <span id="totalItems">0</span> items
-      </div>
-      <div class="flex space-x-2">
-        <button id="prevPage" class="px-4 py-2 border rounded-lg bg-white disabled:opacity-50" disabled>
-          <i class="fas fa-chevron-left"></i>
-        </button>
-        <button id="nextPage" class="px-4 py-2 border rounded-lg bg-white disabled:opacity-50" disabled>
-          <i class="fas fa-chevron-right"></i>
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Add/Edit Chemical Modal -->
-  <div id="chemicalModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
-    <div class="bg-white rounded-lg shadow-lg w-full max-w-md">
-      <div class="flex justify-between items-center border-b px-6 py-4">
-        <h3 class="text-lg font-semibold" id="modalTitle">Add New Chemical</h3>
-        <button id="closeModal" class="text-gray-500 hover:text-gray-700">
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
-      <div class="p-6">
-        <form id="chemicalForm">
-          <input type="hidden" id="chemicalId">
-          <div class="mb-4">
-            <label for="chemicalName" class="block text-sm font-medium text-gray-700 mb-1">Chemical Name</label>
-            <input type="text" id="chemicalName" required
-                   class="w-full px-4 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500">
-          </div>
-          <div class="mb-4">
-            <label for="lotNumber" class="block text-sm font-medium text-gray-700 mb-1">Lot Number</label>
-            <input type="text" id="lotNumber"
-                   class="w-full px-4 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500">
-          </div>
-          <div class="grid grid-cols-2 gap-4 mb-4">
-            <div>
-              <label for="receivedDate" class="block text-sm font-medium text-gray-700 mb-1">Received Date</label>
-              <input type="date" id="receivedDate"
-                     class="w-full px-4 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500">
-            </div>
-            <div>
-              <label for="expirationDate" class="block text-sm font-medium text-gray-700 mb-1">Expiration Date</label>
-              <input type="date" id="expirationDate"
-                     class="w-full px-4 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500">
-            </div>
-          </div>
-          <div class="grid grid-cols-2 gap-4 mb-4">
-            <div>
-              <label for="quantity" class="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
-              <input type="number" id="quantity" min="0" step="0.1" required
-                     class="w-full px-4 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500">
-            </div>
-            <div>
-              <label for="unit" class="block text-sm font-medium text-gray-700 mb-1">Unit</label>
-              <select id="unit" class="w-full px-4 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500">
-                <option value="g">g</option>
-                <option value="mg">mg</option>
-                <option value="L">L</option>
-                <option value="mL">mL</option>
-                <option value="pieces">pieces</option>
-              </select>
-            </div>
-          </div>
-          <div class="mb-4">
-            <label for="location" class="block text-sm font-medium text-gray-700 mb-1">Storage Location</label>
-            <input type="text" id="location"
-                   class="w-full px-4 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500">
-          </div>
-          <div class="flex items-center mb-6">
-            <input type="checkbox" id="activeStatus" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
-            <label for="activeStatus" class="ml-2 block text-sm text-gray-700">Active</label>
-          </div>
-          <div class="flex justify-end space-x-3">
-            <button type="button" id="cancelModal" class="px-4 py-2 border rounded-lg bg-gray-100 hover:bg-gray-200">
-              Cancel
-            </button>
-            <button type="submit" class="px-4 py-2 border rounded-lg bg-blue-500 hover:bg-blue-600 text-white">
-              Save
-            </button>
-          </div>
-        </form>
-      </div>
+    <div class="bg-white rounded-lg shadow p-4">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-100">
+          <tr>
+            <th class="px-4 py-2 text-left text-sm font-semibold text-gray-700">ID</th>
+            <th class="px-4 py-2 text-left text-sm font-semibold text-gray-700">Name</th>
+            <th class="px-4 py-2 text-left text-sm font-semibold text-gray-700">Received</th>
+            <th class="px-4 py-2 text-left text-sm font-semibold text-gray-700">Expires</th>
+            <th class="px-4 py-2 text-left text-sm font-semibold text-gray-700">Active</th>
+            <th class="px-4 py-2 text-left text-sm font-semibold text-gray-700">Quantity</th>
+          </tr>
+        </thead>
+        <tbody id="chemicalTableBody" class="divide-y divide-gray-200">
+          <tr><td colspan="6" class="text-center py-4 text-gray-400">Loading...</td></tr>
+        </tbody>
+      </table>
     </div>
   </div>
 
   <!-- Load Supabase client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
   <script>
-    // Supabase configuration
     const supabaseUrl = 'https://duqwkyydaydljhgucdlq.supabase.co';
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR1cXdreXlkYXlkbGpoZ3VjZGxxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcxODQ5NzEsImV4cCI6MjA2Mjc2MDk3MX0.ZOJe4qCLmLDZDcmw0kbkOenqLxGIDCk6TbKB8DIp54M';
     const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-
-    // Global variables
-    let chemicals = [];
-    let filteredChemicals = [];
-    const itemsPerPage = 10;
-    let currentPage = 1;
-
-    // DOM elements
-    const searchInput = document.getElementById('searchInput');
-    const statusFilter = document.getElementById('statusFilter');
-    const expirationFilter = document.getElementById('expirationFilter');
-    const chemicalTableBody = document.getElementById('chemicalTableBody');
-    const totalChemicals = document.getElementById('totalChemicals');
-    const expiringSoon = document.getElementById('expiringSoon');
-    const lowQuantity = document.getElementById('lowQuantity');
-    const showingFrom = document.getElementById('showingFrom');
-    const showingTo = document.getElementById('showingTo');
-    const totalItems = document.getElementById('totalItems');
-    const prevPage = document.getElementById('prevPage');
-    const nextPage = document.getElementById('nextPage');
-    const addChemicalBtn = document.getElementById('addChemicalBtn');
-    const chemicalModal = document.getElementById('chemicalModal');
-    const modalTitle = document.getElementById('modalTitle');
-    const closeModal = document.getElementById('closeModal');
-    const cancelModal = document.getElementById('cancelModal');
-    const chemicalForm = document.getElementById('chemicalForm');
-    const chemicalId = document.getElementById('chemicalId');
-    const chemicalName = document.getElementById('chemicalName');
-    const lotNumber = document.getElementById('lotNumber');
-    const receivedDate = document.getElementById('receivedDate');
-    const expirationDate = document.getElementById('expirationDate');
-    const quantity = document.getElementById('quantity');
-    const unit = document.getElementById('unit');
-    const location = document.getElementById('location');
-    const activeStatus = document.getElementById('activeStatus');
-
-    // Format date for display
-    function formatDate(dateString) {
-      if (!dateString) return '-';
-      const date = new Date(dateString);
-      return date.toLocaleDateString();
-    }
-
-    // Check if a chemical is expiring soon (within 30 days)
-    function isExpiringSoon(expirationDate) {
-      if (!expirationDate) return false;
-      const today = new Date();
-      const expDate = new Date(expirationDate);
-      const diffTime = expDate - today;
-      const diffDays = diffTime / (1000 * 60 * 60 * 24);
-      return diffDays <= 30 && diffDays >= 0;
-    }
-
-    // Check if a chemical is expired
-    function isExpired(expirationDate) {
-      if (!expirationDate) return false;
-      const today = new Date();
-      const expDate = new Date(expirationDate);
-      return expDate < today;
-    }
-
-    // Check if quantity is low (less than 10)
-    function isLowQuantity(quantity) {
-      return quantity < 10;
-    }
-
-    // Highlight search terms in text
-    function highlightText(text, searchTerm) {
-      if (!searchTerm) return text;
-      const regex = new RegExp(searchTerm, 'gi');
-      return text.replace(regex, match => `<span class="search-highlight">${match}</span>`);
-    }
-
-    // Load chemicals from Supabase
     async function loadChemicals() {
-      chemicalTableBody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-gray-400">Loading...</td></tr>';
-      
+      const tableBody = document.getElementById('chemicalTableBody');
       try {
         const { data, error } = await supabase.from('Chemicals').select('*');
         if (error) throw error;
 
-        chemicals = data || [];
-        updateStats();
-        filterChemicals();
+        if (!data || data.length === 0) {
+          tableBody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-gray-400">No data found.</td></tr>`;
+          return;
+        }
+
+        tableBody.innerHTML = '';
+        data.forEach((chem) => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td class="px-4 py-2 text-sm text-gray-700">${chem.chemical_id}</td>
+            <td class="px-4 py-2 text-sm text-gray-700">${chem.chemical_name}</td>
+            <td class="px-4 py-2 text-sm text-gray-700">${chem.received_date || '-'}</td>
+            <td class="px-4 py-2 text-sm text-gray-700">${chem.expiration_date || '-'}</td>
+            <td class="px-4 py-2 text-sm text-gray-700">${chem.active_status ? 'Yes' : 'No'}</td>
+            <td class="px-4 py-2 text-sm text-gray-700">${chem.quantity}</td>
+          `;
+          tableBody.appendChild(row);
+        });
       } catch (err) {
         console.error('Error loading data:', err.message);
-        chemicalTableBody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-red-400">Failed to load data: ${err.message}</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-red-400">Failed to load data.</td></tr>`;
       }
     }
 
-    // Update statistics
-    function updateStats() {
-      totalChemicals.textContent = chemicals.length;
-      
-      const expiringCount = chemicals.filter(chem => 
-        chem.expiration_date && isExpiringSoon(chem.expiration_date)
-      ).length;
-      expiringSoon.textContent = expiringCount;
-      
-      const lowQuantityCount = chemicals.filter(chem => 
-        isLowQuantity(chem.quantity)
-      ).length;
-      lowQuantity.textContent = lowQuantityCount;
-    }
-
-    // Filter chemicals based on search and filters
-    function filterChemicals() {
-      const searchTerm = searchInput.value.toLowerCase();
-      const statusValue = statusFilter.value;
-      const expirationValue = expirationFilter.value;
-      
-      filteredChemicals = chemicals.filter(chem => {
-        // Search filter
-        const matchesSearch = 
-          chem.chemical_name.toLowerCase().includes(searchTerm) ||
-          chem.chemical_id.toString().includes(searchTerm) ||
-          (chem.lot_number && chem.lot_number.toLowerCase().includes(searchTerm));
-        
-        // Status filter
-        const matchesStatus = 
-          statusValue === 'all' || 
-          (statusValue === 'active' && chem.active_status) || 
-          (statusValue === 'inactive' && !chem.active_status);
-        
-        // Expiration filter
-        let matchesExpiration = true;
-        if (expirationValue === 'expired') {
-          matchesExpiration = isExpired(chem.expiration_date);
-        } else if (expirationValue === 'expiring') {
-          matchesExpiration = isExpiringSoon(chem.expiration_date);
-        } else if (expirationValue === 'safe') {
-          matchesExpiration = !isExpired(chem.expiration_date) && !isExpiringSoon(chem.expiration_date);
-        }
-        
-        return matchesSearch && matchesStatus && matchesExpiration;
-      });
-      
-      currentPage = 1;
-      renderTable();
-      updatePagination();
-    }
-
-    // Render the table with filtered chemicals
-    function renderTable() {
-      if (filteredChemicals.length === 0) {
-        chemicalTableBody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-gray-400">No chemicals found matching your criteria.</td></tr>';
-        return;
-      }
-      
-      const startIndex = (currentPage - 1) * itemsPerPage;
-      const endIndex = Math.min(startIndex + itemsPerPage, filteredChemicals.length);
-      const paginatedChemicals = filteredChemicals.slice(startIndex, endIndex);
-      
-      chemicalTableBody.innerHTML = '';
-      
-      paginatedChemicals.forEach(chem => {
-        const row = document.createElement('tr');
-        
-        // Add CSS classes based on status
-        if (isExpired(chem.expiration_date)) {
-          row.classList.add('expired');
-        } else if (isExpiringSoon(chem.expiration_date)) {
-          row.classList.add('expiring-soon');
-        } else if (isLowQuantity(chem.quantity)) {
-          row.classList.add('low-quantity');
-        }
-        
-        const searchTerm = searchInput.value.toLowerCase();
-        
-        row.innerHTML = `
-          <td class="px-4 py-3 text-sm text-gray-700">${chem.chemical_id}</td>
-          <td class="px-4 py-3 text-sm text-gray-700 font-medium">${highlightText(chem.chemical_name, searchTerm)}</td>
-          <td class="px-4 py-3 text-sm text-gray-700">${chem.lot_number ? highlightText(chem.lot_number, searchTerm) : '-'}</td>
-          <td class="px-4 py-3 text-sm text-gray-700">${formatDate(chem.received_date)}</td>
-          <td class="px-4 py-3 text-sm text-gray-700">${formatDate(chem.expiration_date)}</td>
-          <td class="px-4 py-3 text-sm">
-            <span class="px-2 py-1 rounded-full text-xs ${chem.active_status ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}">
-              ${chem.active_status ? 'Active' : 'Inactive'}
-            </span>
-          </td>
-          <td class="px-4 py-3 text-sm text-gray-700">${chem.quantity} ${chem.unit || ''}</td>
-          <td class="px-4 py-3 text-sm text-gray-700">
-            <button class="edit-btn mr-2 text-blue-500 hover:text-blue-700" data-id="${chem.chemical_id}">
-              <i class="fas fa-edit"></i>
-            </button>
-            <button class="delete-btn text-red-500 hover:text-red-700" data-id="${chem.chemical_id}">
-              <i class="fas fa-trash"></i>
-            </button>
-          </td>
-        `;
-        
-        chemicalTableBody.appendChild(row);
-      });
-      
-      // Add event listeners to edit and delete buttons
-      document.querySelectorAll('.edit-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          const id = e.currentTarget.getAttribute('data-id');
-          editChemical(id);
-        });
-      });
-      
-      document.querySelectorAll('.delete-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          const id = e.currentTarget.getAttribute('data-id');
-          deleteChemical(id);
-        });
-      });
-    }
-
-    // Update pagination controls
-    function updatePagination() {
-      const totalPages = Math.ceil(filteredChemicals.length / itemsPerPage);
-      
-      showingFrom.textContent = filteredChemicals.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
-      showingTo.textContent = Math.min(currentPage * itemsPerPage, filteredChemicals.length);
-      totalItems.textContent = filteredChemicals.length;
-      
-      prevPage.disabled = currentPage === 1;
-      nextPage.disabled = currentPage === totalPages || filteredChemicals.length === 0;
-    }
-
-    // Open modal to add new chemical
-    function openAddModal() {
-      chemicalForm.reset();
-      chemicalId.value = '';
-      modalTitle.textContent = 'Add New Chemical';
-      activeStatus.checked = true;
-      
-      // Set today's date as default for received date
-      const today = new Date().toISOString().split('T')[0];
-      receivedDate.value = today;
-      
-      chemicalModal.classList.remove('hidden');
-    }
-
-    // Open modal to edit existing chemical
-    async function editChemical(id) {
-      const chemical = chemicals.find(c => c.chemical_id == id);
-      if (!chemical) return;
-      
-      chemicalId.value = chemical.chemical_id;
-      chemicalName.value = chemical.chemical_name;
-      lotNumber.value = chemical.lot_number || '';
-      receivedDate.value = chemical.received_date ? chemical.received_date.split('T')[0] : '';
-      expirationDate.value = chemical.expiration_date ? chemical.expiration_date.split('T')[0] : '';
-      quantity.value = chemical.quantity;
-      unit.value = chemical.unit || 'g';
-      location.value = chemical.location || '';
-      activeStatus.checked = chemical.active_status;
-      
-      modalTitle.textContent = 'Edit Chemical';
-      chemicalModal.classList.remove('hidden');
-    }
-
-    // Save chemical (add or update)
-    async function saveChemical(e) {
-      e.preventDefault();
-      
-      const chemicalData = {
-        chemical_name: chemicalName.value,
-        lot_number: lotNumber.value || null,
-        received_date: receivedDate.value || null,
-        expiration_date: expirationDate.value || null,
-        quantity: parseFloat(quantity.value),
-        unit: unit.value,
-        location: location.value || null,
-        active_status: activeStatus.checked
-      };
-      
-      try {
-        if (chemicalId.value) {
-          // Update existing chemical
-          const { error } = await supabase
-            .from('Chemicals')
-            .update(chemicalData)
-            .eq('chemical_id', chemicalId.value);
-          
-          if (error) throw error;
-        } else {
-          // Add new chemical
-          const { error } = await supabase
-            .from('Chemicals')
-            .insert([chemicalData]);
-          
-          if (error) throw error;
-        }
-        
-        chemicalModal.classList.add('hidden');
-        loadChemicals();
-      } catch (err) {
-        console.error('Error saving chemical:', err.message);
-        alert('Failed to save chemical: ' + err.message);
-      }
-    }
-
-    // Delete chemical
-    async function deleteChemical(id) {
-      if (!confirm('Are you sure you want to delete this chemical?')) return;
-      
-      try {
-        const { error } = await supabase
-          .from('Chemicals')
-          .delete()
-          .eq('chemical_id', id);
-        
-        if (error) throw error;
-        
-        loadChemicals();
-      } catch (err) {
-        console.error('Error deleting chemical:', err.message);
-        alert('Failed to delete chemical: ' + err.message);
-      }
-    }
-
-    // Event listeners
     document.addEventListener('DOMContentLoaded', loadChemicals);
-    
-    searchInput.addEventListener('input', filterChemicals);
-    statusFilter.addEventListener('change', filterChemicals);
-    expirationFilter.addEventListener('change', filterChemicals);
-    
-    prevPage.addEventListener('click', () => {
-      if (currentPage > 1) {
-        currentPage--;
-        renderTable();
-        updatePagination();
-      }
-    });
-    
-    nextPage.addEventListener('click', () => {
-      const totalPages = Math.ceil(filteredChemicals.length / itemsPerPage);
-      if (currentPage < totalPages) {
-        currentPage++;
-        renderTable();
-        updatePagination();
-      }
-    });
-    
-    addChemicalBtn.addEventListener('click', openAddModal);
-    closeModal.addEventListener('click', () => chemicalModal.classList.add('hidden'));
-    cancelModal.addEventListener('click', () => chemicalModal.classList.add('hidden'));
-    chemicalForm.addEventListener('submit', saveChemical);
   </script>
 </body>
 </html>

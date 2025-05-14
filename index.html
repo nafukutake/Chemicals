@@ -5,30 +5,211 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Lab Chemical Inventory System</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'lab-blue': '#0a4a7a',
+            'lab-teal': '#0d9488',
+            'lab-orange': '#ea580c',
+            'lab-red': '#dc2626',
+          }
+        }
+      }
+    }
+  </script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+  <style>
+    .chemical-card {
+      transition: all 0.3s ease;
+    }
+    .chemical-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    }
+    .expiring-soon {
+      border-left: 4px solid #ea580c;
+    }
+    .expired {
+      border-left: 4px solid #dc2626;
+    }
+    .low-quantity {
+      border-left: 4px solid #f59e0b;
+    }
+    .search-highlight {
+      background-color: #fef08a;
+    }
+  </style>
 </head>
-<body class="bg-gray-50">
-  <div class="container mx-auto px-4 py-8 max-w-4xl">
-    <h1 class="text-3xl font-bold text-gray-800 mb-4">
-      <i class="fas fa-flask text-blue-500 mr-2"></i> Lab Chemical Inventory
-    </h1>
+<body class="bg-gray-50 min-h-screen">
+  <div class="container mx-auto px-4 py-8 max-w-7xl">
+    <!-- Header with stats -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+      <div class="flex items-center gap-3">
+        <img src="https://seeklogo.com/images/G/Glanbia-logo-660C6835D4-seeklogo.com.png" alt="Glanbia Logo" class="h-16 w-auto">
+      </div>
+      <div class="flex flex-wrap gap-4">
+        <div class="bg-white rounded-lg shadow px-4 py-3 flex items-center">
+          <div class="bg-blue-100 p-3 rounded-full mr-3">
+            <i class="fas fa-vial text-lab-blue text-lg"></i>
+          </div>
+          <div>
+            <p class="text-sm text-gray-500">Total Chemicals</p>
+            <p class="font-bold text-gray-800" id="totalChemicals">0</p>
+          </div>
+        </div>
+        <div class="bg-white rounded-lg shadow px-4 py-3 flex items-center">
+          <div class="bg-orange-100 p-3 rounded-full mr-3">
+            <i class="fas fa-clock text-lab-orange text-lg"></i>
+          </div>
+          <div>
+            <p class="text-sm text-gray-500">Expiring Soon</p>
+            <p class="font-bold text-gray-800" id="expiringSoon">0</p>
+          </div>
+        </div>
+        <div class="bg-white rounded-lg shadow px-4 py-3 flex items-center">
+          <div class="bg-red-100 p-3 rounded-full mr-3">
+            <i class="fas fa-exclamation-triangle text-lab-red text-lg"></i>
+          </div>
+          <div>
+            <p class="text-sm text-gray-500">Low Quantity</p>
+            <p class="font-bold text-gray-800" id="lowQuantity">0</p>
+          </div>
+        </div>
+      </div>
+    </div>
 
-    <div class="bg-white rounded-lg shadow p-4">
-      <table class="min-w-full divide-y divide-gray-200">
-        <thead class="bg-gray-100">
-          <tr>
-            <th class="px-4 py-2 text-left text-sm font-semibold text-gray-700">ID</th>
-            <th class="px-4 py-2 text-left text-sm font-semibold text-gray-700">Name</th>
-            <th class="px-4 py-2 text-left text-sm font-semibold text-gray-700">Received</th>
-            <th class="px-4 py-2 text-left text-sm font-semibold text-gray-700">Expires</th>
-            <th class="px-4 py-2 text-left text-sm font-semibold text-gray-700">Active</th>
-            <th class="px-4 py-2 text-left text-sm font-semibold text-gray-700">Quantity</th>
-          </tr>
-        </thead>
-        <tbody id="chemicalTableBody" class="divide-y divide-gray-200">
-          <tr><td colspan="6" class="text-center py-4 text-gray-400">Loading...</td></tr>
-        </tbody>
-      </table>
+    <!-- Search and filter section -->
+    <div class="bg-white rounded-lg shadow p-4 mb-6">
+      <div class="flex flex-col md:flex-row gap-4">
+        <div class="flex-1">
+          <label for="searchInput" class="block text-sm font-medium text-gray-700 mb-1">Search Chemicals</label>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <i class="fas fa-search text-gray-400"></i>
+            </div>
+            <input type="text" id="searchInput" placeholder="Search by name, ID, or lot number" 
+                   class="pl-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-lab-teal focus:ring focus:ring-lab-teal focus:ring-opacity-50">
+          </div>
+        </div>
+        <div>
+          <label for="statusFilter" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+          <select id="statusFilter" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-lab-teal focus:ring focus:ring-lab-teal focus:ring-opacity-50">
+            <option value="all">All Chemicals</option>
+            <option value="active">Active Only</option>
+            <option value="expiring">Expiring Soon</option>
+            <option value="expired">Expired</option>
+            <option value="low">Low Quantity</option>
+          </select>
+        </div>
+        <div class="flex items-end">
+          <button id="addChemicalBtn" class="bg-lab-teal hover:bg-lab-blue text-white px-4 py-2 rounded-md flex items-center transition-colors">
+            <i class="fas fa-plus mr-2"></i> Add Chemical
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- View toggle -->
+    <div class="flex justify-end mb-4">
+      <div class="inline-flex rounded-md shadow-sm" role="group">
+        <button id="tableViewBtn" type="button" class="px-4 py-2 text-sm font-medium text-white bg-lab-blue rounded-l-lg">
+          <i class="fas fa-table mr-2"></i>Table View
+        </button>
+        <button id="cardViewBtn" type="button" class="px-4 py-2 text-sm font-medium text-lab-blue bg-white border border-gray-200 rounded-r-md hover:bg-gray-50">
+          <i class="fas fa-th-large mr-2"></i>Card View
+        </button>
+      </div>
+    </div>
+
+    <!-- Table View -->
+    <div id="tableView" class="bg-white rounded-lg shadow overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+  <tr>
+    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Chemical ID</th>
+    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Chemical Name</th>
+    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Received Date</th>
+    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product Code</th>
+    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lot Number</th>
+    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Manufacturer</th>
+    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+  </tr>
+</thead>
+          <tbody id="chemicalTableBody" class="bg-white divide-y divide-gray-200">
+            <tr><td colspan="8" class="text-center py-8 text-gray-400"><i class="fas fa-spinner fa-spin mr-2"></i>Loading chemicals...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Card View -->
+    <div id="cardView" class="hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <!-- Cards will be inserted here by JavaScript -->
+      <div class="text-center py-8 text-gray-400"><i class="fas fa-spinner fa-spin mr-2"></i>Loading chemicals...</div>
+    </div>
+
+    <!-- Add Chemical Modal -->
+    <div id="addChemicalModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center hidden z-50">
+      <div class="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-lg font-semibold text-gray-900">Add New Chemical</h3>
+          <button id="closeModalBtn" class="text-gray-400 hover:text-gray-500">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <form id="chemicalForm" class="space-y-4">
+          <div>
+            <label for="chemicalName" class="block text-sm font-medium text-gray-700">Chemical Name</label>
+            <input type="text" id="chemicalName" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-lab-teal focus:ring focus:ring-lab-teal focus:ring-opacity-50">
+          </div>
+          <div>
+            <label for="casNumber" class="block text-sm font-medium text-gray-700">CAS Number</label>
+            <input type="text" id="casNumber" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-lab-teal focus:ring focus:ring-lab-teal focus:ring-opacity-50">
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label for="receivedDate" class="block text-sm font-medium text-gray-700">Received Date</label>
+              <input type="date" id="receivedDate" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-lab-teal focus:ring focus:ring-lab-teal focus:ring-opacity-50">
+            </div>
+            <div>
+              <label for="expirationDate" class="block text-sm font-medium text-gray-700">Expiration Date</label>
+              <input type="date" id="expirationDate" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-lab-teal focus:ring focus:ring-lab-teal focus:ring-opacity-50">
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label for="quantity" class="block text-sm font-medium text-gray-700">Quantity</label>
+              <input type="number" id="quantity" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-lab-teal focus:ring focus:ring-lab-teal focus:ring-opacity-50">
+            </div>
+            <div>
+              <label for="unit" class="block text-sm font-medium text-gray-700">Unit</label>
+              <select id="unit" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-lab-teal focus:ring focus:ring-lab-teal focus:ring-opacity-50">
+                <option value="g">g</option>
+                <option value="kg">kg</option>
+                <option value="mL">mL</option>
+                <option value="L">L</option>
+                <option value="mg">mg</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label for="location" class="block text-sm font-medium text-gray-700">Storage Location</label>
+            <input type="text" id="location" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-lab-teal focus:ring focus:ring-lab-teal focus:ring-opacity-50">
+          </div>
+          <div class="flex items-center">
+            <input type="checkbox" id="activeStatus" class="h-4 w-4 text-lab-teal focus:ring-lab-teal border-gray-300 rounded">
+            <label for="activeStatus" class="ml-2 block text-sm text-gray-700">Active</label>
+          </div>
+          <div class="flex justify-end space-x-3 pt-4">
+            <button type="button" id="cancelAddBtn" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">Cancel</button>
+            <button type="submit" class="px-4 py-2 bg-lab-teal text-white rounded-md text-sm font-medium hover:bg-lab-blue">Save Chemical</button>
+          </div>
+        </form>
+      </div>
     </div>
   </div>
 
@@ -39,37 +220,373 @@
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR1cXdreXlkYXlkbGpoZ3VjZGxxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcxODQ5NzEsImV4cCI6MjA2Mjc2MDk3MX0.ZOJe4qCLmLDZDcmw0kbkOenqLxGIDCk6TbKB8DIp54M';
     const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
+    // DOM elements
+    const searchInput = document.getElementById('searchInput');
+    const statusFilter = document.getElementById('statusFilter');
+    const tableView = document.getElementById('tableView');
+    const cardView = document.getElementById('cardView');
+    const tableViewBtn = document.getElementById('tableViewBtn');
+    const cardViewBtn = document.getElementById('cardViewBtn');
+    const addChemicalBtn = document.getElementById('addChemicalBtn');
+    const addChemicalModal = document.getElementById('addChemicalModal');
+    const closeModalBtn = document.getElementById('closeModalBtn');
+    const cancelAddBtn = document.getElementById('cancelAddBtn');
+    const chemicalForm = document.getElementById('chemicalForm');
+
+    // Global variables
+    let allChemicals = [];
+    let filteredChemicals = [];
+
+    // Initialize the page
+    document.addEventListener('DOMContentLoaded', () => {
+      loadChemicals();
+      setupEventListeners();
+    });
+
+    // Set up event listeners
+    function setupEventListeners() {
+      // Search functionality
+      searchInput.addEventListener('input', () => {
+        filterChemicals();
+      });
+
+      // Status filter
+      statusFilter.addEventListener('change', () => {
+        filterChemicals();
+      });
+
+      // View toggle
+      tableViewBtn.addEventListener('click', () => {
+        tableView.classList.remove('hidden');
+        cardView.classList.add('hidden');
+        tableViewBtn.classList.remove('bg-white', 'text-lab-blue', 'border', 'border-gray-200');
+        tableViewBtn.classList.add('bg-lab-blue', 'text-white');
+        cardViewBtn.classList.remove('bg-lab-blue', 'text-white');
+        cardViewBtn.classList.add('bg-white', 'text-lab-blue', 'border', 'border-gray-200');
+      });
+
+      cardViewBtn.addEventListener('click', () => {
+        tableView.classList.add('hidden');
+        cardView.classList.remove('hidden');
+        cardViewBtn.classList.remove('bg-white', 'text-lab-blue', 'border', 'border-gray-200');
+        cardViewBtn.classList.add('bg-lab-blue', 'text-white');
+        tableViewBtn.classList.remove('bg-lab-blue', 'text-white');
+        tableViewBtn.classList.add('bg-white', 'text-lab-blue', 'border', 'border-gray-200');
+      });
+
+      // Add chemical modal
+      addChemicalBtn.addEventListener('click', () => {
+        addChemicalModal.classList.remove('hidden');
+      });
+
+      closeModalBtn.addEventListener('click', () => {
+        addChemicalModal.classList.add('hidden');
+      });
+
+      cancelAddBtn.addEventListener('click', () => {
+        addChemicalModal.classList.add('hidden');
+      });
+
+      // Form submission
+      chemicalForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await addChemical();
+      });
+    }
+
+    // Load chemicals from Supabase
     async function loadChemicals() {
       const tableBody = document.getElementById('chemicalTableBody');
       try {
         const { data, error } = await supabase.from('Chemicals').select('*');
         if (error) throw error;
 
-        if (!data || data.length === 0) {
-          tableBody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-gray-400">No data found.</td></tr>`;
-          return;
+        allChemicals = data || [];
+        filteredChemicals = [...allChemicals];
+        
+        if (allChemicals.length === 0) {
+          tableBody.innerHTML = `<tr><td colspan="8" class="text-center py-8 text-gray-400"><i class="fas fa-box-open mr-2"></i>No chemicals found in inventory</td></tr>`;
+          cardView.innerHTML = `<div class="col-span-3 text-center py-8 text-gray-400"><i class="fas fa-box-open mr-2"></i>No chemicals found in inventory</div>`;
+        } else {
+          updateChemicalDisplays();
+          updateStats();
         }
-
-        tableBody.innerHTML = '';
-        data.forEach((chem) => {
-          const row = document.createElement('tr');
-          row.innerHTML = `
-            <td class="px-4 py-2 text-sm text-gray-700">${chem.chemical_id}</td>
-            <td class="px-4 py-2 text-sm text-gray-700">${chem.chemical_name}</td>
-            <td class="px-4 py-2 text-sm text-gray-700">${chem.received_date || '-'}</td>
-            <td class="px-4 py-2 text-sm text-gray-700">${chem.expiration_date || '-'}</td>
-            <td class="px-4 py-2 text-sm text-gray-700">${chem.active_status ? 'Yes' : 'No'}</td>
-            <td class="px-4 py-2 text-sm text-gray-700">${chem.quantity}</td>
-          `;
-          tableBody.appendChild(row);
-        });
       } catch (err) {
         console.error('Error loading data:', err.message);
-        tableBody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-red-400">Failed to load data.</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="8" class="text-center py-8 text-red-400"><i class="fas fa-exclamation-triangle mr-2"></i>Failed to load chemical data</td></tr>`;
+        cardView.innerHTML = `<div class="col-span-3 text-center py-8 text-red-400"><i class="fas fa-exclamation-triangle mr-2"></i>Failed to load chemical data</div>`;
       }
     }
 
-    document.addEventListener('DOMContentLoaded', loadChemicals);
+    // Filter chemicals based on search and status
+    function filterChemicals() {
+      const searchTerm = searchInput.value.toLowerCase();
+      const status = statusFilter.value;
+      
+      filteredChemicals = allChemicals.filter(chem => {
+        // Search filter
+        const matchesSearch = 
+          chem.chemical_name.toLowerCase().includes(searchTerm) ||
+          chem.chemical_id.toString().includes(searchTerm) ||
+          (chem.cas_number && chem.cas_number.toLowerCase().includes(searchTerm));
+        
+        // Status filter
+        let matchesStatus = true;
+        if (status === 'active') {
+          matchesStatus = chem.active_status;
+        } else if (status === 'expiring') {
+          matchesStatus = isExpiringSoon(chem.expiration_date);
+        } else if (status === 'expired') {
+          matchesStatus = isExpired(chem.expiration_date);
+        } else if (status === 'low') {
+          matchesStatus = isLowQuantity(chem.quantity);
+        }
+        
+        return matchesSearch && matchesStatus;
+      });
+      
+      updateChemicalDisplays();
+      highlightSearchTerms(searchTerm);
+    }
+
+    // Update both table and card views
+    function updateChemicalDisplays() {
+      updateTableView();
+      updateCardView();
+    }
+
+    // Update the table view
+    function updateTableView() {
+      const tableBody = document.getElementById('chemicalTableBody');
+      
+      if (filteredChemicals.length === 0) {
+        tableBody.innerHTML = `<tr><td colspan="8" class="text-center py-8 text-gray-400"><i class="fas fa-search mr-2"></i>No chemicals match your search</td></tr>`;
+        return;
+      }
+      
+      tableBody.innerHTML = '';
+      
+      filteredChemicals.forEach(chem => {
+        const row = document.createElement('tr');
+        const isExpiring = isExpiringSoon(chem.expiration_date);
+        const isExpiredChem = isExpired(chem.expiration_date);
+        const isLow = isLowQuantity(chem.quantity);
+        
+        // Add appropriate class based on status
+        if (isExpiredChem) {
+          row.classList.add('bg-red-50');
+        } else if (isExpiring) {
+          row.classList.add('bg-orange-50');
+        } else if (isLow) {
+          row.classList.add('bg-yellow-50');
+        }
+        
+        row.innerHTML = `
+          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${chem.chemical_id}</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${chem.chemical_name}</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${chem.cas_number || '-'}</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatDate(chem.received_date) || '-'}</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm ${getExpirationClass(chem.expiration_date)}">
+            ${formatDate(chem.expiration_date) || '-'}
+            ${isExpiring ? '<span class="ml-2 px-2 py-1 text-xs rounded-full bg-orange-100 text-orange-800">Expiring</span>' : ''}
+            ${isExpiredChem ? '<span class="ml-2 px-2 py-1 text-xs rounded-full bg-red-100 text-red-800">Expired</span>' : ''}
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+            ${chem.active_status ? '<span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">Active</span>' : '<span class="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800">Inactive</span>'}
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm ${isLow ? 'font-semibold text-yellow-700' : 'text-gray-500'}">
+            ${chem.quantity} ${chem.unit || 'g'}
+            ${isLow ? '<span class="ml-2 px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-800">Low</span>' : ''}
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+            <button class="text-lab-teal hover:text-lab-blue mr-3" title="Edit"><i class="fas fa-edit"></i></button>
+            <button class="text-red-500 hover:text-red-700" title="Delete"><i class="fas fa-trash-alt"></i></button>
+          </td>
+        `;
+        tableBody.appendChild(row);
+      });
+    }
+
+    // Update the card view
+    function updateCardView() {
+      cardView.innerHTML = '';
+      
+      if (filteredChemicals.length === 0) {
+        cardView.innerHTML = `<div class="col-span-3 text-center py-8 text-gray-400"><i class="fas fa-search mr-2"></i>No chemicals match your search</div>`;
+        return;
+      }
+      
+      filteredChemicals.forEach(chem => {
+        const isExpiring = isExpiringSoon(chem.expiration_date);
+        const isExpiredChem = isExpired(chem.expiration_date);
+        const isLow = isLowQuantity(chem.quantity);
+        
+        // Determine card border color based on status
+        let cardClass = 'chemical-card bg-white rounded-lg shadow p-4 border-l-4 border-transparent';
+        if (isExpiredChem) {
+          cardClass += ' expired';
+        } else if (isExpiring) {
+          cardClass += ' expiring-soon';
+        } else if (isLow) {
+          cardClass += ' low-quantity';
+        }
+        
+        const card = document.createElement('div');
+        card.className = cardClass;
+        card.innerHTML = `
+          <div class="flex justify-between items-start mb-2">
+            <h3 class="text-lg font-semibold text-gray-900">${chem.chemical_name}</h3>
+            <span class="text-xs px-2 py-1 rounded-full ${chem.active_status ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}">
+              ${chem.active_status ? 'Active' : 'Inactive'}
+            </span>
+          </div>
+          <div class="text-sm text-gray-500 mb-1">ID: ${chem.chemical_id}</div>
+          ${chem.cas_number ? `<div class="text-sm text-gray-500 mb-1">CAS: ${chem.cas_number}</div>` : ''}
+          
+          <div class="grid grid-cols-2 gap-4 mt-4">
+            <div>
+              <div class="text-xs text-gray-500">Received</div>
+              <div class="text-sm font-medium">${formatDate(chem.received_date) || '-'}</div>
+            </div>
+            <div>
+              <div class="text-xs text-gray-500">Expires</div>
+              <div class="text-sm font-medium ${getExpirationClass(chem.expiration_date)}">
+                ${formatDate(chem.expiration_date) || '-'}
+                ${isExpiring ? '<span class="ml-1 px-1 py-0.5 text-xs rounded-full bg-orange-100 text-orange-800">Expiring</span>' : ''}
+                ${isExpiredChem ? '<span class="ml-1 px-1 py-0.5 text-xs rounded-full bg-red-100 text-red-800">Expired</span>' : ''}
+              </div>
+            </div>
+          </div>
+          
+          <div class="mt-4 pt-4 border-t border-gray-100 flex justify-between items-center">
+            <div>
+              <div class="text-xs text-gray-500">Quantity</div>
+              <div class="text-sm font-medium ${isLow ? 'text-yellow-700' : 'text-gray-700'}">
+                ${chem.quantity} ${chem.unit || 'g'}
+                ${isLow ? '<span class="ml-1 px-1 py-0.5 text-xs rounded-full bg-yellow-100 text-yellow-800">Low</span>' : ''}
+              </div>
+            </div>
+            <div class="flex space-x-2">
+              <button class="text-lab-teal hover:text-lab-blue" title="Edit"><i class="fas fa-edit"></i></button>
+              <button class="text-red-500 hover:text-red-700" title="Delete"><i class="fas fa-trash-alt"></i></button>
+            </div>
+          </div>
+        `;
+        cardView.appendChild(card);
+      });
+    }
+
+    // Highlight search terms in the table
+    function highlightSearchTerms(searchTerm) {
+      if (!searchTerm) return;
+      
+      const tableCells = document.querySelectorAll('#chemicalTableBody td');
+      const cards = document.querySelectorAll('#cardView .chemical-card');
+      
+      // Clear previous highlights
+      document.querySelectorAll('.search-highlight').forEach(el => {
+        el.classList.remove('search-highlight');
+      });
+      
+      // Highlight in table view
+      tableCells.forEach(cell => {
+        if (cell.textContent.toLowerCase().includes(searchTerm)) {
+          cell.classList.add('search-highlight');
+        }
+      });
+      
+      // Highlight in card view
+      cards.forEach(card => {
+        if (card.textContent.toLowerCase().includes(searchTerm)) {
+          card.classList.add('search-highlight');
+        }
+      });
+    }
+
+    // Update statistics counters
+    function updateStats() {
+      const totalChemicals = allChemicals.length;
+      const expiringSoon = allChemicals.filter(chem => isExpiringSoon(chem.expiration_date)).length;
+      const lowQuantity = allChemicals.filter(chem => isLowQuantity(chem.quantity)).length;
+      
+      document.getElementById('totalChemicals').textContent = totalChemicals;
+      document.getElementById('expiringSoon').textContent = expiringSoon;
+      document.getElementById('lowQuantity').textContent = lowQuantity;
+    }
+
+    // Helper functions
+    function formatDate(dateString) {
+      if (!dateString) return null;
+      const date = new Date(dateString);
+      return date.toLocaleDateString();
+    }
+
+    function isExpiringSoon(expirationDate) {
+      if (!expirationDate) return false;
+      const today = new Date();
+      const expDate = new Date(expirationDate);
+      const diffTime = expDate - today;
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      return diffDays > 0 && diffDays <= 30; // Expiring within 30 days
+    }
+
+    function isExpired(expirationDate) {
+      if (!expirationDate) return false;
+      const today = new Date();
+      const expDate = new Date(expirationDate);
+      return expDate < today;
+    }
+
+    function isLowQuantity(quantity) {
+      return quantity < 10; // Consider low if less than 10 units
+    }
+
+    function getExpirationClass(expirationDate) {
+      if (isExpired(expirationDate)) return 'text-red-600 font-semibold';
+      if (isExpiringSoon(expirationDate)) return 'text-orange-600 font-semibold';
+      return 'text-gray-500';
+    }
+
+    // Add new chemical to database
+    async function addChemical() {
+      const chemicalName = document.getElementById('chemicalName').value;
+      const casNumber = document.getElementById('casNumber').value;
+      const receivedDate = document.getElementById('receivedDate').value;
+      const expirationDate = document.getElementById('expirationDate').value;
+      const quantity = parseFloat(document.getElementById('quantity').value);
+      const unit = document.getElementById('unit').value;
+      const location = document.getElementById('location').value;
+      const activeStatus = document.getElementById('activeStatus').checked;
+      
+      try {
+        const { data, error } = await supabase
+          .from('Chemicals')
+          .insert([
+            { 
+              chemical_name: chemicalName,
+              cas_number: casNumber,
+              received_date: receivedDate,
+              expiration_date: expirationDate,
+              quantity: quantity,
+              unit: unit,
+              location: location,
+              active_status: activeStatus
+            }
+          ]);
+        
+        if (error) throw error;
+        
+        // Reset form and close modal
+        chemicalForm.reset();
+        addChemicalModal.classList.add('hidden');
+        
+        // Reload chemicals
+        loadChemicals();
+      } catch (err) {
+        console.error('Error adding chemical:', err.message);
+        alert('Failed to add chemical. Please try again.');
+      }
+    }
   </script>
 </body>
 </html>
